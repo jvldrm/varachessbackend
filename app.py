@@ -1,7 +1,7 @@
 from flask import Flask, request, jsonify, render_template, make_response
 import json
 import sqlite3
-from myFunctions import get_current_turn, make_move, get_current_turn_and_fen, checkEmailPass, get_players_id
+from myFunctions import get_current_turn, make_move, get_current_turn_and_fen, checkEmailPass, get_players_id, logout, getAvailablePlayers
 from flask_cors import CORS
 import logging
 logging.basicConfig(filename='myLog.log', encoding='utf-8', level=logging.DEBUG)
@@ -39,12 +39,14 @@ def login():
     email = request.args.get('email')
     password = request.args.get('password')
 
-    canlog = checkEmailPass(email, password)
-
+    datadb = checkEmailPass(email, password)
+    canlog = datadb[0]
     if canlog :
         myObj = {   
                     'email' : email, 
                     'password' : password,
+                    'nickname': datadb[1],
+                    'name': datadb[2],
                     'logged' : 'true'
                     } 
     else:
@@ -60,6 +62,26 @@ def login():
     response.headers.add('Access-Control-Allow-Methods', "*")
     return response
     #return "<p>HELLO and wlecome</p>";
+
+@app.route("/logoutplayer") 
+def logoutplayer():
+    email = request.args.get('email')
+    password = request.args.get('password')
+    if logout(email, password) :
+        myObj = {   
+                    'status' : 'ok'
+                    } 
+    else:
+        myObj = {   
+                    'status' : 'error'
+                } 
+    response = make_response(jsonify(myObj))
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
+    return response
+
+
 
 @app.route("/test", methods=["POST", "OPTIONS"])
 def test():
@@ -195,3 +217,14 @@ def whoseturn():
 if __name__ == '__main__':
     app.run(debug=True)
 
+
+
+
+@app.route('/listplayers')
+def listplayers():
+    list_players = getAvailablePlayers()
+    response = make_response(jsonify(list_players))
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
+    return response
