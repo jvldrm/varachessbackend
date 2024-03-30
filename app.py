@@ -1,7 +1,9 @@
 from flask import Flask, request, jsonify, render_template, make_response
 import json
 import sqlite3
-from myFunctions import get_current_turn, make_move, get_current_turn_and_fen, checkEmailPass, get_players_id, logout, getAvailablePlayers
+from myFunctions import get_current_turn, make_move, get_current_turn_and_fen, \
+                    checkEmailPass, get_players_id, logout, getAvailablePlayers, loginWallet, \
+                    makeInvitation
 from flask_cors import CORS
 import logging
 logging.basicConfig(filename='myLog.log', encoding='utf-8', level=logging.DEBUG)
@@ -33,6 +35,21 @@ def hello_world():
 @app.route("/form")
 def form():
     return render_template('aform.html')
+
+@app.route("/loginplayer")
+def loginplayer():
+    name = request.args.get('name')
+    account = request.args.get('account')
+    status = loginWallet(name, account)
+    myObj = {   
+                    'status' : status, 
+                    } 
+    response = make_response(jsonify(myObj))
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
+    return response
+
 
 @app.route("/login") 
 def login():
@@ -81,6 +98,17 @@ def logoutplayer():
     response.headers.add('Access-Control-Allow-Methods', "*")
     return response
 
+
+@app.route("/invite")
+def invite():
+    player_id_from = request.args.get('player_id_from')
+    player_id_to = request.args.get('player_id_to')
+
+    status = makeInvitation(player_id_from, player_id_to)
+    myObj = {   'status' : status, 
+                } 
+    response = make_response(jsonify(myObj))
+    return response
 
 
 @app.route("/test", methods=["POST", "OPTIONS"])

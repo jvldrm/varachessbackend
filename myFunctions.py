@@ -128,6 +128,42 @@ def make_move(game_id, player_id_white, player_id_black, fen ):
     con.close()
 
 
+def loginWallet(name, account):
+    con = sqlite3.connect("mydata.db")
+    cur = con.cursor()
+    #res = cur.execute(f'select * from plays where id = (select max(id) from plays where game_id={game_id}) and game_id={game_id}')
+    res = cur.execute(f'select * from players where name = "{name}" and account="{account}"')
+
+    
+    #val, = res.fetchone()
+    print(f"Trying to check if player {name} with account {account}")
+    li = res.fetchall()
+    if not li : 
+        print(f"  There are no players ")
+        #crear un renglon para esta cartera
+        try:
+            res = cur.execute(f"""insert into players (name, account, lastlogin)
+                                            values
+                                            ( '{name}', '{account}', datetime('now') )""")
+                
+            con.commit()
+            return True
+        except sqlite3.OperationalError:
+            return False
+    else:
+        cur.execute(f"""update players set lastlogin=datetime('now')
+                    where name='{name}' and account='{account}' """)
+        con.commit()
+        if cur.rowcount < 1 :
+            return False
+        else:
+            return True
+        
+
+    
+
+
+
 def checkEmailPass(email, password):
     con = sqlite3.connect("mydata.db")
     cur = con.cursor()
@@ -158,7 +194,11 @@ def logout(email, password):
 def getAvailablePlayers():
     con = sqlite3.connect("mydata.db")
     cur = con.cursor()
-    res = cur.execute("""  select id, nickname, exp from players where logged = 1 """)
+    #res = cur.execute("""  select id, nickname, exp from players where logged = 1 """)
+    res = cur.execute("""  
+                      select name, 1440*(julianday(datetime('now')) - julianday(lastlogin)) as diff, id 
+                            from players where diff < 1;
+                      """)
     li = res.fetchall()
     
     if not li : 
@@ -212,7 +252,138 @@ def checkIfInvited(player_id):
     li = res.fetchall()
     return li
 
+
 def acceptDeclineInvitation(player_id, player_id_from, answer=1):
+  con = sqlite3.connect("mydata.db")
+  cur = con.cursor()
+  if answer == 1:
+    status = 'ACCEPTED'
+    # revisar si ya se habia aceptado...
+    # solo puede haber una invitacion del mismo jugador
+    #tiene que revisar si esta en WAITING la invitacion para avanzar
+    res = cur.execute(f""" 
+                      select status from invitations 
+                      where 
+                        player_id_from    = {player_id_from} 
+                        and 
+                        player_id_to  = {player_id}
+                        and
+                        id = (select max(id) as id from invitations 
+                                    where player_id_from = {player_id_from} 
+                                     and  player_id_to  = {player_id})
+                      """)
+    (invitation_status, ) = res.fetchone()
+
+    print(
+        "@acceptDeclineInvitation (want to accept) current status of invitation: ",
+        invitation_status)
+
+    if invitation_status == 'WAITING':
+      # crear el juego si estaba esperando el invitado
+      res = cur.execute(f"""insert into games (
+                                            player_1, player_2, date_start, status
+                                        )
+                                        values
+                                        (  
+                                            {player_id_from}, {player_id}, datetime('now','localtime'), 'STARTED'
+                                        )""")
+      game_id = cur.lastrowid
+      con.commit()
+      # meter el primer movimiento
+      res = cur.execute(f"""insert into plays 
+                                  (turn, fen, player_id_white, player_id_black, game_id, date_move) 
+                                values
+                                    ('w', 
+                                    'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', 
+                                    {player_id_from}, {player_id}, {game_id}, datetime('now','localtime')
+                                        )""")
+      con.commit()
+      # revisar si esto esta bien... (PENDIENTE)
+    elif invitation_status == 'ACCEPTED':
+      #obtener el id del juego si tiene el juego iniciado
+      res = cur.execute(f""" 
+                      select id from games 
+                      where 
+                        player_1    = {player_id_from} 
+                        and 
+                        player_2  = {player_id}
+                        and
+                        status = 'STARTED'
+                      """)
+      (game_id, ) = res.fetchone()
+
+    elif invitation_status == 'DECLINED':
+      # si ya estaba declinado, no se puede empezar el juego
+      game_id = 0
+      status = 'DECLINED'
+    else:
+      # el caso de que no esta aceptado, ni esta esperando, en caso de que no es ninunga de estas opciones
+      game_id = 0
+
+  else:
+    status = 'DECLINED'
+    game_id = 0
+
+  print("The game ID is: ", game_id)
+
+  res = cur.execute(f""" 
+                      update invitations
+                        set  status = '{status}',
+                        date_response = datetime('now','localtime'),
+                        game_id = {game_id}
+                      where 
+                        player_id_to    = {player_id} 
+                        and 
+                        player_id_from  = {player_id_from} 
+                      """)
+  con.commit()
+  if cur.rowcount < 1:
+    return -1
+  else:
+    return game_id
+
+
+def getStatusOfGame(game_id):
+  con = sqlite3.connect("mydata.db")
+  cur = con.cursor()
+  res = cur.execute(f"""select status from games where id = {game_id} """)
+  (status, ) = res.fetchone()
+  return status
+
+    
+def finishGame(game_id, player_id_won, player_id_lost):
+  con = sqlite3.connect("mydata.db")
+  cur = con.cursor()
+  res = cur.execute(f""" 
+                      update game
+                        set status = 'FINISHED',
+                            date_finish = datetime('now','localtime'),
+                            player_id_won = {player_id_won},
+                            player_id_lost = {player_id_lost}
+                      where 
+                        game_id = {game_id}
+                      """)
+  ## borrar la invitacion cuando se termina el juego
+  res = cur.execute(f"""
+                      delete from invitations where game_id={game_id}
+                      """)
+  con.commit()
+  if cur.rowcount < 1:
+    return False
+  else:
+    return True
+    
+
+
+
+
+
+
+
+
+#### prev
+    
+def acceptDeclineInvitation0(player_id, player_id_from, answer=1):
     con = sqlite3.connect("mydata.db")
     cur = con.cursor()
     if answer == 1 :
@@ -299,20 +470,3 @@ def acceptDeclineInvitation(player_id, player_id_from, answer=1):
     else:
         return True
     
-def finishGame(game_id, player_id_won, player_id_lost):
-    con = sqlite3.connect("mydata.db")
-    cur = con.cursor()
-    res = cur.execute(f""" 
-                      update game
-                        set status = 'FINISHED',
-                            date_finish = datetime('now','localtime'),
-                            player_id_won = {player_id_won},
-                            player_id_lost = {player_id_lost}
-                      where 
-                        game_id = {game_id}
-                      """)
-    con.commit()
-    if cur.rowcount < 1 :
-        return False
-    else:
-        return True

@@ -1,6 +1,31 @@
-from myFunctions import  make_move, get_current_turn_and_fen, get_current_turn, checkEmailPass, get_players_id, logout, getAvailablePlayers, makeInvitation, checkIfInvited, acceptDeclineInvitation
+from myFunctions import  make_move, get_current_turn_and_fen, get_current_turn, checkEmailPass, get_players_id, logout, getAvailablePlayers, makeInvitation, checkIfInvited, acceptDeclineInvitation, loginWallet
 import json
 current_game_id = '33'
+
+myPlayer = "sharona"
+myAccount = '5CZbnDn7HynygXfb1uoaNEvkGC38V9zQ6xuWwXyqqt47ddn9'
+player_id_from = 11
+status = loginWallet(myPlayer, myAccount )
+if status:
+    print("OKK -- login check")
+else:
+    print("Problem to login")
+
+vals = getAvailablePlayers()
+print( vals )
+jvals =  json.dumps(vals)
+print(jvals)
+playersList = getAvailablePlayers()
+for r in playersList:
+    print( f'ID: {r[2]} \t NAME: {r[0]} \n')
+
+
+
+player_id_invite = int(input("What player ID do you want to invite?"))
+
+print( "INVITATION SUCESS? ", makeInvitation(player_id_from, player_id_invite) )
+
+exit()
 
 
 
@@ -25,10 +50,7 @@ print("white is ", current_player_id_white)
 print("black is ", current_player_id_black)
 
 
-vals = getAvailablePlayers()
-print( vals )
-jvals =  json.dumps(vals)
-print(jvals)
+
 #arr = get_current_turn(0)
 
 
@@ -47,6 +69,9 @@ print(jvals)
 (turn, fen) = get_current_turn_and_fen(99)
 
 print(f"turn: {turn} fen: {fen} ")
+
+
+
 
 player_id = int(input("What player ID are you?"))
 
