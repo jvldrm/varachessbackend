@@ -1,8 +1,15 @@
 import sqlite3
-
+import random
 import logging
 logging.basicConfig(filename='myLog.log', encoding='utf-8', level=logging.DEBUG)
 
+
+def get_all_players_in_db():
+    con = sqlite3.connect("mydata.db")
+    cur = con.cursor()
+    res = cur.execute(f""" select id, name, account, lastlogin from players """)
+    li = res.fetchall()
+    return li
 
 
 def get_current_turn_and_fen(game_id):
@@ -86,46 +93,49 @@ def get_players_id(game_id):
 
 
 
-def make_move(game_id, player_id_white, player_id_black, fen ):
-    print('-- at make_move')
-    #print("game id is ", game_id)
+def make_move(game_id, player_id_white, player_id_black, fen):
+  print('-- at make_move')
+  #print("game id is ", game_id)
 
-    con = sqlite3.connect("mydata.db")
-    cur = con.cursor()
-    res = cur.execute(f'select id, turn from plays where id = (select max(id) as id from plays where game_id={game_id}) and game_id={game_id}')
-    #print(res)
-    
+  con = sqlite3.connect("mydata.db")
+  cur = con.cursor()
+  res = cur.execute(
+      f'select id, turn from plays where id = (select max(id) as id from plays where game_id={game_id}) and game_id={game_id}'
+  )
+  #print(res)
 
-    vals = res.fetchone()
-    #print (type(vals))
+  vals = res.fetchone()
+  #print (type(vals))
 
-    if vals == None:
-        #print ("there is an error, game does not exist perhaps")
-        # put the new game_id and make the first move
-        res = cur.execute(f'''insert into plays  
+  if vals == None:
+    #print ("there is an error, game does not exist perhaps")
+    # put the new game_id and make the first move
+    res = cur.execute(f'''insert into plays  
                       (game_id, move_id, turn, fen, player_id_white, player_id_black)
                       values 
                       ("{game_id}", "0", "w", "{fen}", "{player_id_white}", "{player_id_black}")
                       ''')
-    else: #if the game_id already exists, proceed to insert a move
-        print("---If the game_id already exists, proceed to insert a move")
-        move_id = int( vals[0] )
-        turn_db = vals[1]
+  else:  #if the game_id already exists, proceed to insert a move
+    print("---If the game_id already exists, proceed to insert a move")
+    move_id = int(vals[0])
+    turn_db = vals[1]
 
-        move_id += 1
-        
-        if turn_db == 'w' :
-            turn_db = 'b' 
-        else:
-            turn_db = 'w'
-    
-        res = cur.execute(f'''insert into plays  
+    move_id += 1
+
+    if turn_db == 'w':
+      turn_db = 'b'
+    else:
+      turn_db = 'w'
+
+    res = cur.execute(f'''insert into plays  
                         (game_id, move_id, turn, fen, player_id_white, player_id_black)
                         values 
                         ("{game_id}", "{move_id}", "{turn_db}", "{fen}", "{player_id_white}", "{player_id_black}")
                         ''')
-    con.commit()
-    con.close()
+    ## actualizar el estado del juego
+  res=cur.execute(f'''update games set status="INPROGRESS" where game_id={game_id}''')
+  con.commit()
+  con.close()
 
 
 def loginWallet(name, account):
@@ -145,19 +155,21 @@ def loginWallet(name, account):
             res = cur.execute(f"""insert into players (name, account, lastlogin)
                                             values
                                             ( '{name}', '{account}', datetime('now') )""")
-                
+            player_id = cur.lastrowid
             con.commit()
-            return True
+            return player_id
         except sqlite3.OperationalError:
-            return False
+            return -1
     else:
         cur.execute(f"""update players set lastlogin=datetime('now')
                     where name='{name}' and account='{account}' """)
         con.commit()
         if cur.rowcount < 1 :
-            return False
+            return -1
         else:
-            return True
+            res = cur.execute(f"""select id from players where name='{name}' and account='{account}' """)
+            player_id, = res.fetchone()
+            return player_id
         
 
     
@@ -279,13 +291,21 @@ def acceptDeclineInvitation(player_id, player_id_from, answer=1):
         invitation_status)
 
     if invitation_status == 'WAITING':
+      # escoger quien va a ser el jugador blanco/negro de manera aleatoria
+      players = [player_id_from, player_id]
+      player_id_white = random.choice(players)
+      players.remove(player_id_white)
+      player_id_black = players[0]
+
       # crear el juego si estaba esperando el invitado
       res = cur.execute(f"""insert into games (
-                                            player_1, player_2, date_start, status
+                                            player_1, player_2, date_start, status, 
+                                            player_id_white, player_id_black
                                         )
                                         values
                                         (  
-                                            {player_id_from}, {player_id}, datetime('now','localtime'), 'STARTED'
+                                            {player_id_from}, {player_id}, datetime('now','localtime'), 'STARTED', 
+                                            {player_id_white}, {player_id_black}
                                         )""")
       game_id = cur.lastrowid
       con.commit()
@@ -341,6 +361,22 @@ def acceptDeclineInvitation(player_id, player_id_from, answer=1):
     return -1
   else:
     return game_id
+
+
+def getInvitationStatus(player_id):
+    con = sqlite3.connect("mydata.db")
+    cur = con.cursor()
+    res = cur.execute(f"""select * from invitations where player_id_from = {player_id}""")
+    li = res.fetchall()
+    return li
+
+
+def checkIfPendingGame(player_id):
+    con = sqlite3.connect("mydata.db")
+    cur = con.cursor()
+    res = cur.execute(f"""select * from games where (player_1 = {player_id} or player_2 = {player_id} ) and status != 'FINISHED' """)
+    li = res.fetchall()
+    return li
 
 
 def getStatusOfGame(game_id):
