@@ -1,9 +1,12 @@
 from myFunctions import  make_move, get_current_turn_and_fen, get_current_turn, checkEmailPass, \
     get_players_id, logout, getAvailablePlayers, makeInvitation, checkIfInvited, acceptDeclineInvitation, loginWallet,\
-    getStatusOfGame, get_all_players_in_db, getInvitationStatus, checkIfPendingGame
+    getStatusOfGame, get_all_players_in_db, getInvitationStatus, checkIfPendingGame, finishGame
 import json
 
 import time
+
+
+#make_move(33, current_player_id_white, current_player_id_black,  '1r2r2k/1p1n3R/p1qp2pB/6Pn/P1Pp/3B4/1P2PQ1K/5R b - - 0 1')
 
 #this is a testing function
 def playGame(game_id, current_player, player_id_white, player_id_black):
@@ -18,10 +21,22 @@ def playGame(game_id, current_player, player_id_white, player_id_black):
     print(f"Your color is: {player_color_long}")
     print(f"turn: {turn} fen: {fen} ")
     if( turn == player_color):
-        print("It's your turn")
         
+        fen=input("It's your turn. Imsert fen")
+        make_move(game_id, player_id_white, player_id_black, fen)
+
+        finish = input("Do you want to [f]inish game? ")
+        if( finish == 'f'):
+            player_id_won = int(input("Who wins? "))
+            player_id_lost = int(input("Who lost? "))
+            draw = int(input("Was it a draw (1 o 0)?"))
+            finishGame(game_id, player_id_won, player_id_lost, draw)
+
     else:
-        print("It's your opponent's turn")
+        print("It's your opponent's turn. Waiting.")
+        time.sleep(2)
+
+    playGame(game_id, current_player, player_id_white, player_id_black)
 
 all_players = get_all_players_in_db()
 
@@ -59,8 +74,6 @@ if player_id > -1:
 else:
     print("Problem to login")
     exit
-
-
 
 # first check if you have a pending game
 listGames = checkIfPendingGame(player_id)

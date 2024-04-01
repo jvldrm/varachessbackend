@@ -133,7 +133,7 @@ def make_move(game_id, player_id_white, player_id_black, fen):
                         ("{game_id}", "{move_id}", "{turn_db}", "{fen}", "{player_id_white}", "{player_id_black}")
                         ''')
     ## actualizar el estado del juego
-  res=cur.execute(f'''update games set status="INPROGRESS" where game_id={game_id}''')
+  res=cur.execute(f'''update games set status="INPROGRESS" where id={game_id}''')
   con.commit()
   con.close()
 
@@ -387,7 +387,7 @@ def getStatusOfGame(game_id):
   return status
 
     
-def finishGame(game_id, player_id_won, player_id_lost):
+def finishGame(game_id, player_id_won, player_id_lost, draw):
   con = sqlite3.connect("mydata.db")
   cur = con.cursor()
   res = cur.execute(f""" 
@@ -395,7 +395,8 @@ def finishGame(game_id, player_id_won, player_id_lost):
                         set status = 'FINISHED',
                             date_finish = datetime('now','localtime'),
                             player_id_won = {player_id_won},
-                            player_id_lost = {player_id_lost}
+                            player_id_lost = {player_id_lost},
+                            draw = {draw}
                       where 
                         game_id = {game_id}
                       """)
