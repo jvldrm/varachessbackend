@@ -3,7 +3,7 @@ import json
 import sqlite3
 from myFunctions import get_current_turn, make_move, get_current_turn_and_fen, \
                     checkEmailPass, get_players_id, logout, getAvailablePlayers, loginWallet, \
-                    makeInvitation
+                    makeInvitation, getInvitationStatus, checkIfInvited, acceptDeclineInvitation
 from flask_cors import CORS
 import logging
 logging.basicConfig(filename='myLog.log', encoding='utf-8', level=logging.DEBUG)
@@ -252,6 +252,42 @@ if __name__ == '__main__':
 def listplayers():
     list_players = getAvailablePlayers()
     response = make_response(jsonify(list_players))
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
+    return response
+
+
+@app.route('/mysentinvitations/<player_id>')
+def mysentinvitations(player_id):
+    #game_id=request.args.get('game_id') 
+    list_invitations = getInvitationStatus(player_id)
+    response = make_response(jsonify(list_invitations))
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
+    return response
+
+
+@app.route('/myinvitations/<player_id>')
+def myinvitations(player_id):
+    #game_id=request.args.get('game_id') 
+    list_invitations = checkIfInvited(player_id)
+    response = make_response(jsonify(list_invitations))
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
+    return response
+
+
+
+
+@app.route('/acceptdeclineinvitation/<player_id>/<player_id_from>/<response>')
+def acceptdeclineinvitation(player_id, player_id_from, response):
+    #game_id=request.args.get('game_id') 
+    print(f"@acceptdeclineinvitation {player_id} {player_id_from} {response}")
+    list_invitations = acceptDeclineInvitation(player_id, player_id_from, response)
+    response = make_response(jsonify(list_invitations))
     response.headers.add("Access-Control-Allow-Origin", "*")
     response.headers.add('Access-Control-Allow-Headers', "*")
     response.headers.add('Access-Control-Allow-Methods', "*")

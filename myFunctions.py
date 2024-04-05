@@ -256,9 +256,11 @@ def checkIfInvited(player_id):
     cur = con.cursor()
     #revisar si ya existe el jugador
     res = cur.execute(f""" 
-                      select player_id_from, date_invitation, status from invitations 
-                      where 
-                        player_id_to    = {player_id} 
+                    select p.name, i.player_id_from, i.date_invitation, i.status 
+                      from invitations i 
+                      inner join players p on 
+                      p.id = i.player_id_from
+                      where i.player_id_to = {player_id}
                       """)
     # solo si no hay invitaciones de este jugador, insert
     li = res.fetchall()
@@ -268,7 +270,8 @@ def checkIfInvited(player_id):
 def acceptDeclineInvitation(player_id, player_id_from, answer=1):
   con = sqlite3.connect("mydata.db")
   cur = con.cursor()
-  if answer == 1:
+  print(f"@acceptDeclineInvitation function: {player_id} {player_id_from} {answer} {type(answer)}")
+  if int(answer) == 1:
     status = 'ACCEPTED'
     # revisar si ya se habia aceptado...
     # solo puede haber una invitacion del mismo jugador
