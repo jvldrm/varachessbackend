@@ -218,8 +218,6 @@ def getAvailablePlayers():
     else:
         return li
     
-
-
 def makeInvitation(player_id_from, player_id_to):
     con = sqlite3.connect("mydata.db")
     cur = con.cursor()
@@ -251,21 +249,59 @@ def makeInvitation(player_id_from, player_id_to):
     else :
         return True
 
+# para saber si estoy siendo invitado...
 def checkIfInvited(player_id):
     con = sqlite3.connect("mydata.db")
     cur = con.cursor()
-    #revisar si ya existe el jugador
     res = cur.execute(f""" 
-                    select p.name, i.player_id_from, i.date_invitation, i.status 
+                    select p.name, i.player_id_from, i.date_invitation, i.status, i.game_id 
                       from invitations i 
                       inner join players p on 
-                      p.id = i.player_id_from
+                      p.id = i.player_id_to
                       where i.player_id_to = {player_id}
                       """)
-    # solo si no hay invitaciones de este jugador, insert
     li = res.fetchall()
+    for i in range(0, len(li)):
+      # check status 
+      if ( li[i][3] == 'ACCEPTED') :
+        
+        r = list(li[i])
+        game_id = r[4]
+        print("Game id is: ",  game_id)
+        res = cur.execute(f"""select  player_id_white, player_id_black from games where id = {game_id} """)
+        (player_id_white, player_id_black ) = res.fetchone()
+        r.append(  player_id_white )
+        r.append( player_id_black )
+        li[i] = r
+
+
     return li
 
+
+# para saber si mis invitaciones estan siendo aceptadas (status)...
+def getInvitationStatus(player_id):
+    con = sqlite3.connect("mydata.db")
+    cur = con.cursor()
+    res = cur.execute(f"""select i.id, i.player_id_from, i.player_id_to, i.date_invitation, i.date_response, i.status, i.game_id, p.name
+                          from invitations i 
+                          inner join players p on 
+                          p.id = i.player_id_from
+                          where i.player_id_from = {player_id}""")
+    li = res.fetchall()
+    print(li)
+    
+     
+    # check status 
+    if ( len(li) > 0 and li[0][5] == 'ACCEPTED') :
+       
+       li = list(li[0])
+       game_id = li[6]
+       print("Game id is: ",  game_id)
+       res = cur.execute(f"""select  player_id_white, player_id_black from games where id = {game_id} """)
+       (player_id_white, player_id_black ) = res.fetchone()
+       li.append(  player_id_white )
+       li.append( player_id_black )
+    return li
 
 def acceptDeclineInvitation(player_id, player_id_from, answer=1):
   con = sqlite3.connect("mydata.db")
@@ -366,12 +402,7 @@ def acceptDeclineInvitation(player_id, player_id_from, answer=1):
     return game_id
 
 
-def getInvitationStatus(player_id):
-    con = sqlite3.connect("mydata.db")
-    cur = con.cursor()
-    res = cur.execute(f"""select * from invitations where player_id_from = {player_id}""")
-    li = res.fetchall()
-    return li
+
 
 
 def checkIfPendingGame(player_id):
