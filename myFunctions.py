@@ -254,19 +254,19 @@ def checkIfInvited(player_id):
     con = sqlite3.connect("mydata.db")
     cur = con.cursor()
     res = cur.execute(f""" 
-                    select p.name, i.player_id_from, i.date_invitation, i.status, i.game_id 
+                    select i.id, i.player_id_from, i.player_id_to, i.date_invitation, i.date_response, i.status, i.game_id, p.name
                       from invitations i 
                       inner join players p on 
-                      p.id = i.player_id_to
+                      p.id = i.player_id_from
                       where i.player_id_to = {player_id}
                       """)
     li = res.fetchall()
     for i in range(0, len(li)):
       # check status 
-      if ( li[i][3] == 'ACCEPTED') :
+      if ( li[i][5] == 'ACCEPTED') :
         
         r = list(li[i])
-        game_id = r[4]
+        game_id = r[6]
         print("Game id is: ",  game_id)
         res = cur.execute(f"""select  player_id_white, player_id_black from games where id = {game_id} """)
         (player_id_white, player_id_black ) = res.fetchone()
@@ -285,7 +285,7 @@ def getInvitationStatus(player_id):
     res = cur.execute(f"""select i.id, i.player_id_from, i.player_id_to, i.date_invitation, i.date_response, i.status, i.game_id, p.name
                           from invitations i 
                           inner join players p on 
-                          p.id = i.player_id_from
+                          p.id = i.player_id_to
                           where i.player_id_from = {player_id}""")
     li = res.fetchall()
     print(li)
