@@ -5,13 +5,14 @@ import json
 
 import time
 
-r = getInvitationStatus( 14 )
-print(r)
+import sys
 
-r = checkIfInvited( 12 )
-print(r)
 
-exit
+playersList = getAvailablePlayers()
+for r in playersList:
+    print( f'ID: {r[2]} \t NAME: {r[0]} \t STATUS: {r[3]} \n')
+
+sys.exit()
 
 #make_move(33, current_player_id_white, current_player_id_black,  '1r2r2k/1p1n3R/p1qp2pB/6Pn/P1Pp/3B4/1P2PQ1K/5R b - - 0 1')
 

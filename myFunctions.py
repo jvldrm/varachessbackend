@@ -208,8 +208,18 @@ def getAvailablePlayers():
     cur = con.cursor()
     #res = cur.execute("""  select id, nickname, exp from players where logged = 1 """)
     res = cur.execute("""  
-                      select name, 1440*(julianday(datetime('now')) - julianday(lastlogin)) as diff, id 
-                            from players where diff < 1;
+                      select name, 1440*(julianday(datetime('now')) - julianday(lastlogin)) as diff, id,
+                          case when exists  (select * from games)
+                          then (SELECT 
+                                CASE WHEN player_1 IS players.id OR player_2 IS players.id
+                                THEN 'PLAYING'
+                                ELSE 'AVAILABLE'
+                                END AS player_state
+                          FROM games )
+                          ELSE
+                          "AVAILABLE"
+                          end as player_state
+                        from players where diff < 1;
                       """)
     li = res.fetchall()
     

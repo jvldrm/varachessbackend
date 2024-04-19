@@ -9,3 +9,4 @@ res = cur.execute(f"""
                   where id=(select max(id) as id from plays where game_id={game_id}) 
                   and game_id={game_id};
                   """)
+
