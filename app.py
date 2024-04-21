@@ -4,7 +4,7 @@ import sqlite3
 from myFunctions import get_current_turn, make_move, get_current_turn_and_fen, \
                     checkEmailPass, get_players_id, logout, getAvailablePlayers, loginWallet, \
                     makeInvitation, getInvitationStatus, checkIfInvited, acceptDeclineInvitation, \
-                    finishGame, getStatusOfGame
+                    finishGame, getStatusOfGame, removeGame, removeInvitation
 
 from flask_cors import CORS
 import logging
@@ -291,6 +291,16 @@ def endgame(game_id, player_id_won, player_id_lost, status):
     return response
 
 
+@app.route('/closegame/<game_id>')
+def closegame(game_id):
+    #game_id=request.args.get('game_id') 
+    response = removeGame(game_id)
+    response = make_response(jsonify(response))
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
+    return response
+
 @app.route('/myinvitations/<player_id>')
 def myinvitations(player_id):
     #game_id=request.args.get('game_id') 
@@ -310,6 +320,17 @@ def acceptdeclineinvitation(player_id, player_id_from, response):
     print(f"@acceptdeclineinvitation {player_id} {player_id_from} {response}")
     list_invitations = acceptDeclineInvitation(player_id, player_id_from, response)
     response = make_response(jsonify(list_invitations))
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
+    return response
+
+
+@app.route('/cancelinvitation/<player_id_from>/<player_id_to>')
+def cancelinvitation(player_id_from, player_id_to):
+    #game_id=request.args.get('game_id') 
+    response = removeInvitation(player_id_from, player_id_to)
+    response = make_response(jsonify(response))
     response.headers.add("Access-Control-Allow-Origin", "*")
     response.headers.add('Access-Control-Allow-Headers', "*")
     response.headers.add('Access-Control-Allow-Methods', "*")

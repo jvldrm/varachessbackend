@@ -469,7 +469,17 @@ def finishGame(game_id, player_id_won, player_id_lost, status):
 def removeGame(game_id):
   con = sqlite3.connect("mydata.db")
   cur = con.cursor()
-  res = cur.execute(f"delete from invitations where game_id={game_id}")
+  res = cur.execute(f"delete from games where id={game_id}")
+  con.commit()
+  if res.rowcount > 0:
+     return True
+  else:
+     return False
+
+def removeInvitation(player_id_from, player_id_to):
+  con = sqlite3.connect("mydata.db")
+  cur = con.cursor()
+  res = cur.execute(f"delete from invitations where player_id_from={player_id_from} and player_id_to={player_id_to}")
   con.commit()
   if res.rowcount > 0:
      return True
@@ -480,7 +490,7 @@ def removeGame(game_id):
 
 #### prev
     
-def acceptDeclineInvitation0(player_id, player_id_from, answer=1):
+def acceptDeclineInvitation(player_id, player_id_from, answer=1):
     con = sqlite3.connect("mydata.db")
     cur = con.cursor()
     if answer == 1 :

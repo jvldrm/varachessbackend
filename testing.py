@@ -1,11 +1,19 @@
 from myFunctions import  make_move, get_current_turn_and_fen, get_current_turn, checkEmailPass, \
     get_players_id, logout, getAvailablePlayers, makeInvitation, checkIfInvited, acceptDeclineInvitation, loginWallet,\
-    getStatusOfGame, get_all_players_in_db, getInvitationStatus, checkIfPendingGame, finishGame
+    getStatusOfGame, get_all_players_in_db, getInvitationStatus, checkIfPendingGame, finishGame, removeGame
 import json
 
 import time
 
 import sys
+
+
+game_id = 11
+r = removeGame(game_id)
+print(r)
+sys.exit()
+
+
 
 game_id = 1
 r = getStatusOfGame(game_id)
