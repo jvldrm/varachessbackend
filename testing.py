@@ -7,10 +7,20 @@ import time
 
 import sys
 
+game_id = 1
+r = getStatusOfGame(game_id)
+print(r)
+
 
 playersList = getAvailablePlayers()
 for r in playersList:
     print( f'ID: {r[2]} \t NAME: {r[0]} \t STATUS: {r[3]} \n')
+# 1|2024-04-19 11:11:54|5|12|INPROGRESS||||5|12|0
+game_id = 1
+player_id_won = 12
+player_id_lost = 5
+status = '2'
+finishGame(game_id, player_id_won, player_id_lost, status)
 
 sys.exit()
 

@@ -3,7 +3,9 @@ import json
 import sqlite3
 from myFunctions import get_current_turn, make_move, get_current_turn_and_fen, \
                     checkEmailPass, get_players_id, logout, getAvailablePlayers, loginWallet, \
-                    makeInvitation, getInvitationStatus, checkIfInvited, acceptDeclineInvitation
+                    makeInvitation, getInvitationStatus, checkIfInvited, acceptDeclineInvitation, \
+                    finishGame, getStatusOfGame
+
 from flask_cors import CORS
 import logging
 logging.basicConfig(filename='myLog.log', encoding='utf-8', level=logging.DEBUG)
@@ -263,6 +265,26 @@ def mysentinvitations(player_id):
     #game_id=request.args.get('game_id') 
     list_invitations = getInvitationStatus(player_id)
     response = make_response(jsonify(list_invitations))
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
+    return response
+
+@app.route('/gamestatus/<game_id>')
+def gamestatus(game_id):
+    #game_id=request.args.get('game_id') 
+    list_invitations = getStatusOfGame(game_id)
+    response = make_response(jsonify(list_invitations))
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
+    return response
+
+@app.route('/endgame/<game_id>/<player_id_won>/<player_id_lost>/<status>')
+def endgame(game_id, player_id_won, player_id_lost, status):
+    #game_id=request.args.get('game_id') 
+    response = finishGame(game_id, player_id_won, player_id_lost, status)
+    response = make_response(jsonify(response))
     response.headers.add("Access-Control-Allow-Origin", "*")
     response.headers.add('Access-Control-Allow-Headers', "*")
     response.headers.add('Access-Control-Allow-Methods', "*")

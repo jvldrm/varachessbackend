@@ -426,39 +426,55 @@ def checkIfPendingGame(player_id):
 def getStatusOfGame(game_id):
   con = sqlite3.connect("mydata.db")
   cur = con.cursor()
-  res = cur.execute(f"""select status from games where id = {game_id} """)
-  (status, ) = res.fetchone()
-  return status
+  res = cur.execute(f"""select * from games where id = {game_id} """)
+  result = res.fetchone()
+  return result
 
-    
-def finishGame(game_id, player_id_won, player_id_lost, draw):
+
+
+def finishGame(game_id, player_id_won, player_id_lost, status):
   con = sqlite3.connect("mydata.db")
   cur = con.cursor()
+
+  if status == '1' :
+     status = 'FINISHED'
+  elif status == '2' :
+     status = 'FORFEIT'
+  elif status == '3' :
+     status = 'DRAW'
+  else :
+     status = 'FINISHED'
+
+
   res = cur.execute(f""" 
-                      update game
-                        set status = 'FINISHED',
-                            date_finish = datetime('now','localtime'),
-                            player_id_won = {player_id_won},
-                            player_id_lost = {player_id_lost},
-                            draw = {draw}
+                      update games
+                        set status = '{status}',
+                        date_finish = datetime('now','localtime'),
+                        player_id_won = {player_id_won},   
+                        player_id_lost = {player_id_lost}
                       where 
-                        game_id = {game_id}
+                        id = {game_id}
                       """)
+  update_status = cur.rowcount 
   ## borrar la invitacion cuando se termina el juego
-  res = cur.execute(f"""
-                      delete from invitations where game_id={game_id}
-                      """)
+  res = cur.execute(f"delete from invitations where game_id={game_id}")
+  # res = cur.execute(f"delete from games where id={game_id}")
   con.commit()
-  if cur.rowcount < 1:
+  if update_status < 1:
     return False
   else:
     return True
     
 
-
-
-
-
+def removeGame(game_id):
+  con = sqlite3.connect("mydata.db")
+  cur = con.cursor()
+  res = cur.execute(f"delete from invitations where game_id={game_id}")
+  con.commit()
+  if res.rowcount > 0:
+     return True
+  else:
+     return False
 
 
 
