@@ -8,6 +8,14 @@ import time
 import sys
 
 
+
+
+res = getInvitationStatus(5)
+print(res)
+
+sys.exit()
+
+
 game_id = 11
 r = removeGame(game_id)
 print(r)

@@ -4,7 +4,7 @@ import sqlite3
 from myFunctions import get_current_turn, make_move, get_current_turn_and_fen, \
                     checkEmailPass, get_players_id, logout, getAvailablePlayers, loginWallet, \
                     makeInvitation, getInvitationStatus, checkIfInvited, acceptDeclineInvitation, \
-                    finishGame, getStatusOfGame, removeGame, removeInvitation
+                    finishGame, getStatusOfGame, removeGame, removeInvitation, checkIfInGame
 
 from flask_cors import CORS
 import logging
@@ -314,11 +314,11 @@ def myinvitations(player_id):
 
 
 
-@app.route('/acceptdeclineinvitation/<player_id>/<player_id_from>/<response>')
-def acceptdeclineinvitation(player_id, player_id_from, response):
+@app.route('/acceptdeclineinvitation/<invitation_id>/<response>')
+def acceptdeclineinvitation(invitation_id, response):
     #game_id=request.args.get('game_id') 
-    print(f"@acceptdeclineinvitation {player_id} {player_id_from} {response}")
-    list_invitations = acceptDeclineInvitation(player_id, player_id_from, response)
+    print(f"@acceptdeclineinvitation {invitation_id} {response}")
+    list_invitations = acceptDeclineInvitation(invitation_id, response)
     response = make_response(jsonify(list_invitations))
     response.headers.add("Access-Control-Allow-Origin", "*")
     response.headers.add('Access-Control-Allow-Headers', "*")
@@ -330,6 +330,16 @@ def acceptdeclineinvitation(player_id, player_id_from, response):
 def cancelinvitation(player_id_from, player_id_to):
     #game_id=request.args.get('game_id') 
     response = removeInvitation(player_id_from, player_id_to)
+    response = make_response(jsonify(response))
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
+    return response
+
+@app.route('/checkifingame/<player_id>')
+def checkifingame(player_id):
+    #game_id=request.args.get('game_id') 
+    response = checkIfInGame(player_id)
     response = make_response(jsonify(response))
     response.headers.add("Access-Control-Allow-Origin", "*")
     response.headers.add('Access-Control-Allow-Headers', "*")

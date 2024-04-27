@@ -228,7 +228,7 @@ def getAvailablePlayers():
     else:
         return li
     
-def makeInvitation(player_id_from, player_id_to):
+def makeInvitation_previous(player_id_from, player_id_to):
     con = sqlite3.connect("mydata.db")
     cur = con.cursor()
     # revisar si hay invitaciones de este origen
@@ -239,7 +239,7 @@ def makeInvitation(player_id_from, player_id_to):
                         and 
                         player_id_from  = {player_id_from} 
                       """)
-    # solo si no hay invitaciones de este jugador, insert
+    # solo si no hay invitaciones de este jugador, insert ... y no esté en el estado de ...
     li = res.fetchall()
     print( "@make Invitation -- row count from select... ", len(li))
     if len(li) == 0:
@@ -258,6 +258,40 @@ def makeInvitation(player_id_from, player_id_to):
     # si hay invitaciones... decir.. todo bien
     else :
         return True
+    
+def makeInvitation(player_id_from, player_id_to):
+    con = sqlite3.connect("mydata.db")
+    cur = con.cursor()
+    # revisar si hay invitaciones de este origen y que estén pendientes...
+    res = cur.execute(f""" 
+                      select status from invitations 
+                      where 
+                        player_id_to    = {player_id_to} 
+                        and 
+                        player_id_from  = {player_id_from} 
+                        and
+                        status = 'WAITING'
+                      """)
+    # solo si no hay invitaciones de este jugador, insert ... y no esté en el estado de WAiting...
+    li = res.fetchall()
+    print( "@make Invitation -- row count from select... ", len(li))
+    if len(li) == 0:
+        res = cur.execute(f"""insert into invitations (
+                                    player_id_from, player_id_to, 
+                                    date_invitation, date_response, status, game_id)
+                                    values
+                                    ({player_id_from}, {player_id_to}, 
+                                    datetime('now','localtime'), 
+                                    '0', 'WAITING', 0 )""")
+        con.commit()
+        if cur.rowcount < 1 :
+            return False
+        else:
+            return True
+    # si hay invitaciones... decir.. todo bien
+    else :
+        return True
+
 
 # para saber si estoy siendo invitado...
 def checkIfInvited(player_id):
@@ -296,7 +330,8 @@ def getInvitationStatus(player_id):
                           from invitations i 
                           inner join players p on 
                           p.id = i.player_id_to
-                          where i.player_id_from = {player_id}""")
+                          where i.player_id_from = {player_id} and (i.status='WAITING' or  i.status='ACCEPTED') """)
+                      #   where i.player_id_from = {player_id} and i.status='WAITING' """)
     li = res.fetchall()
     print(li)
     
@@ -313,7 +348,96 @@ def getInvitationStatus(player_id):
        li.append( player_id_black )
     return li
 
-def acceptDeclineInvitation(player_id, player_id_from, answer=1):
+
+def checkIfInGame(player_id):
+  con = sqlite3.connect("mydata.db")
+  cur = con.cursor()
+
+  res = cur.execute(f""" 
+                       select * from games where player_1 = {player_id} or player_2 = {player_id}
+                      """)
+  tup =  res.fetchone()
+  #revisar que exista esta invitacion
+  if tup is not None :
+     
+     return tup
+  else:
+     return []
+  
+  
+
+
+def acceptDeclineInvitation(invitation_id, answer=1):
+  con = sqlite3.connect("mydata.db")
+  cur = con.cursor()
+  # answer = 1 accepted
+  # answer = 0 declined
+  answer = int(answer)
+  if answer == 1:
+    res = cur.execute(f""" 
+                       select status, player_id_from, player_id_to from invitations where id = {invitation_id} 
+                      """)
+    tup =  res.fetchone()
+    #revisar que exista esta invitacion
+    if tup is not None :
+      (invitation_status, player_id_from, player_id_to) = tup
+      print(f"Players are: {player_id_from} and {player_id_to}")
+      if invitation_status == 'WAITING':
+
+        invitation_status = 'ACCEPTED'
+
+        # escoger quien va a ser el jugador blanco/negro de manera aleatoria
+        players = [player_id_from, player_id_to]
+        player_id_white = random.choice(players)
+        players.remove(player_id_white)
+        player_id_black = players[0]
+        # crear el juego si estaba esperando el invitado
+        res = cur.execute(f"""insert into games (
+                                              player_1, player_2, date_start, status, 
+                                              player_id_white, player_id_black
+                                          )
+                                          values
+                                          (  
+                                              {player_id_from}, {player_id_to}, datetime('now','localtime'), 'STARTED', 
+                                              {player_id_white}, {player_id_black}
+                                          )""")
+        
+        con.commit()
+        game_id = cur.lastrowid
+
+        # meter el primer movimiento
+        res = cur.execute(f"""insert into plays 
+                                    (turn, fen, player_id_white, player_id_black, game_id, date_move) 
+                                  values
+                                      ('w', 
+                                      'rnbqkbnr/pppppppp/8/8/8/8/PPPPPPPP/RNBQKBNR w KQkq - 0 1', 
+                                      {player_id_white}, {player_id_black}, {game_id}, datetime('now','localtime')
+                                          )""")
+        con.commit()
+
+
+      
+    else:
+       return -1
+    
+  else:
+     game_id = 0
+     invitation_status = 'DECLINED'
+  
+  res = cur.execute(f""" 
+                      update invitations
+                        set  status = '{invitation_status}',
+                        date_response = datetime('now','localtime'),
+                        game_id = {game_id}
+                      where 
+                        id = {invitation_id}
+                      """)
+  con.commit()
+
+  return game_id
+    
+
+def acceptDeclineInvitation2(player_id, player_id_from, answer=1):
   con = sqlite3.connect("mydata.db")
   cur = con.cursor()
   print(f"@acceptDeclineInvitation function: {player_id} {player_id_from} {answer} {type(answer)}")
@@ -331,7 +455,7 @@ def acceptDeclineInvitation(player_id, player_id_from, answer=1):
                         and
                         id = (select max(id) as id from invitations 
                                     where player_id_from = {player_id_from} 
-                                     and  player_id_to  = {player_id})
+                                     and  player_id_to  = {player_id}  and status = 'WAITING' )
                       """)
     (invitation_status, ) = res.fetchone()
 
@@ -490,7 +614,7 @@ def removeInvitation(player_id_from, player_id_to):
 
 #### prev
     
-def acceptDeclineInvitation(player_id, player_id_from, answer=1):
+def acceptDeclineInvitation0(player_id, player_id_from, answer=1):
     con = sqlite3.connect("mydata.db")
     cur = con.cursor()
     if answer == 1 :
@@ -503,6 +627,8 @@ def acceptDeclineInvitation(player_id, player_id_from, answer=1):
                         player_id_from    = {player_id_from} 
                         and 
                         player_id_to  = {player_id}
+                        and
+                        status = 'WAITING'
                         and
                         id = (select max(id) as id from invitations 
                                     where player_id_from = {player_id_from} 
@@ -575,5 +701,5 @@ def acceptDeclineInvitation(player_id, player_id_from, answer=1):
     if cur.rowcount < 1 :
         return False
     else:
-        return True
+        return game_id
     
