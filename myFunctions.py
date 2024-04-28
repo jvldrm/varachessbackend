@@ -702,4 +702,19 @@ def acceptDeclineInvitation0(player_id, player_id_from, answer=1):
         return False
     else:
         return game_id
-    
+  
+
+def gameProcess(id_player):
+  con = sqlite3.connect("mydata.db")
+  cur = con.cursor()
+  res = cur.execute(f""" select gamestate from players where id={id_player} """ )
+
+  (gamestate, ) = res.fetchone() 
+
+  if gamestate == 'GETPLAYERSLIST':
+     print ("Going to get the players list")
+
+  
+
+  return gamestate
+

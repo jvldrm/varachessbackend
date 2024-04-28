@@ -1,6 +1,7 @@
 from myFunctions import  make_move, get_current_turn_and_fen, get_current_turn, checkEmailPass, \
     get_players_id, logout, getAvailablePlayers, makeInvitation, checkIfInvited, acceptDeclineInvitation, loginWallet,\
-    getStatusOfGame, get_all_players_in_db, getInvitationStatus, checkIfPendingGame, finishGame, removeGame
+    getStatusOfGame, get_all_players_in_db, getInvitationStatus, checkIfPendingGame, finishGame, removeGame, \
+    gameProcess
 import json
 
 import time
@@ -10,7 +11,7 @@ import sys
 
 
 
-res = getInvitationStatus(5)
+res = gameProcess(5)
 print(res)
 
 sys.exit()
