@@ -9,7 +9,11 @@ import time
 import sys
 
 
+playersList = getAvailablePlayers()
+for r in playersList:
+    print( f'ID: {r[2]} \t NAME: {r[0]} \t STATUS: {r[3]} \n')
 
+sys.exit()
 
 res = gameProcess(5)
 print(res)

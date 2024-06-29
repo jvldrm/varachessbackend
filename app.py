@@ -4,7 +4,7 @@ import sqlite3
 from myFunctions import get_current_turn, make_move, get_current_turn_and_fen, \
                     checkEmailPass, get_players_id, logout, getAvailablePlayers, loginWallet, \
                     makeInvitation, getInvitationStatus, checkIfInvited, acceptDeclineInvitation, \
-                    finishGame, getStatusOfGame, removeGame, removeInvitation, checkIfInGame
+                    finishGame, getStatusOfGame, removeGame, removeInvitation, checkIfInGame, getCurrentGames
 
 from flask_cors import CORS
 import logging
@@ -340,6 +340,18 @@ def cancelinvitation(player_id_from, player_id_to):
 def checkifingame(player_id):
     #game_id=request.args.get('game_id') 
     response = checkIfInGame(player_id)
+    response = make_response(jsonify(response))
+    response.headers.add("Access-Control-Allow-Origin", "*")
+    response.headers.add('Access-Control-Allow-Headers', "*")
+    response.headers.add('Access-Control-Allow-Methods', "*")
+    return response
+
+#
+
+@app.route('/currentgames')
+def currentgames():
+    
+    response = getCurrentGames()
     response = make_response(jsonify(response))
     response.headers.add("Access-Control-Allow-Origin", "*")
     response.headers.add('Access-Control-Allow-Headers', "*")

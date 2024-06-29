@@ -211,7 +211,8 @@ def getAvailablePlayers():
                       select name, 1440*(julianday(datetime('now')) - julianday(lastlogin)) as diff, id,
                           case when exists  (select * from games)
                           then (SELECT 
-                                CASE WHEN player_1 IS players.id OR player_2 IS players.id
+                                CASE WHEN (player_1 IS players.id OR player_2 IS players.id) 
+                                    AND (status IS 'INPROGRESS' OR status IS 'STARTED')
                                 THEN 'PLAYING'
                                 ELSE 'AVAILABLE'
                                 END AS player_state
@@ -354,7 +355,8 @@ def checkIfInGame(player_id):
   cur = con.cursor()
 
   res = cur.execute(f""" 
-                       select * from games where player_1 = {player_id} or player_2 = {player_id}
+                       select * from games where (player_1 = {player_id} or player_2 = {player_id}) 
+                                                  and (status = 'INPROGRESS' OR status = 'STARTED')
                       """)
   tup =  res.fetchone()
   #revisar que exista esta invitacion
@@ -549,12 +551,30 @@ def checkIfPendingGame(player_id):
 
 def getStatusOfGame(game_id):
   con = sqlite3.connect("mydata.db")
-  cur = con.cursor()
-  res = cur.execute(f"""select * from games where id = {game_id} """)
+  cur = con.cursor() 
+  #select * from games where id = {game_id} 
+  res = cur.execute(f"""  select games.id, games.date_start, games.player_1, games.player_2,
+                    games.status, games.date_finish, games.player_id_won,
+                    games.player_id_lost, games.player_id_white, games.player_id_black,
+                        (select name from players where id = games.player_id_white),
+                        (select name from players where id = games.player_id_black)
+                    from games where id = {game_id} 
+                       """)
   result = res.fetchone()
   return result
 
+def getCurrentGames():
+  con = sqlite3.connect("mydata.db")
+  cur = con.cursor() 
+  #select * from games where id = {game_id} 
+  res = cur.execute(f"""  select *, 
+                        (select name from players where id = games.player_1),
+                        (select name from players where id = games.player_2)                
+                        from games where status = 'INPROGRESS' or status = 'STARTED';
 
+                       """)
+  result = res.fetchall()
+  return result
 
 def finishGame(game_id, player_id_won, player_id_lost, status):
   con = sqlite3.connect("mydata.db")
